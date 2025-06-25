@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title> Movie Recommender</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; img-src 'self' https://wallpapers.com https://www.transparenttextures.com https://fonts.gstatic.com data:; script-src 'self'; connect-src 'self' https://generativelanguage.googleapis.com; frame-ancestors 'none';">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Space theme styles */
+        body {
+            background: #000 url('https://wallpapers.com/images/hd/interstellar-black-hole-4k-9k7v7k8q1b1kqv7w.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: #e0e6f6;
+            font-family: 'Fredoka', 'Kanit', 'Quicksand', Arial, sans-serif;
+            /* ใช้ Fredoka (น่ารัก), Kanit (ไทย), Quicksand (อังกฤษ) */
+            margin: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 0;
+            pointer-events: none;
+            background: url('https://www.transparenttextures.com/patterns/stardust.png');
+            opacity: 0.25;
+        }
+        header {
+            text-align: center;
+            padding: 2rem 0 1rem 0;
+            font-size: 2.5rem;
+            letter-spacing: 2px;
+            color: #7ecfff;
+            text-shadow: 0 0 24px #00eaff, 0 0 48px #2b65ec;
+            position: relative;
+            z-index: 1;
+        }
+        .container {
+            background: rgba(30, 40, 100, 0.92);
+            max-width: 840px;
+            /* เดิม max-width: 420px; */
+            margin: 2rem auto;
+            border-radius: 22px;
+            box-shadow: 0 0 32px #00eaff33, 0 0 80px #2b65ec22;
+            padding: 2.2rem 2rem 2rem 2rem;
+            position: relative;
+            z-index: 1;
+            border: 1.5px solid #2b65ec;
+        }
+        label, select, button {
+            display: block;
+            width: 100%;
+            margin-bottom: 1.2rem;
+            font-size: 1.1rem;
+        }
+        input, button {
+            background: #101a2b;
+            color: #e0e6f6;
+            border: 1.5px solid #7ecfff;
+            border-radius: 10px;
+            padding: 0.8rem;
+            outline: none;
+            transition: background 0.2s, border 0.2s;
+        }
+        input:focus, button:focus {
+            background: #18243a;
+            border-color: #00eaff;
+        }
+        button {
+            cursor: pointer;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin-bottom: 0;
+            box-shadow: 0 0 8px #00eaff44;
+        }
+        .recommendation {
+            margin-top: 1.5rem;
+            padding: 1.2rem 1rem;
+            background: rgba(20, 30, 60, 0.95);
+            border-radius: 14px;
+            box-shadow: 0 0 16px #7ecfff44;
+            border: 1px solid #2b65ec;
+        }
+        .movie-title {
+            color: #7ecfff;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-shadow: 0 0 8px #00eaff99;
+        }
+        hr {
+            border: 0;
+            border-top: 1px solid #2b65ec;
+            margin: 1rem 0;
+        }
+        #lang-switcher {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 1000;
+        }
+        #lang-switcher button {
+            margin-right: 4px;
+            background: #101a2b;
+            color: #7ecfff;
+            border: 1.5px solid #7ecfff;
+            border-radius: 8px;
+            padding: 0.2rem 0.9rem;
+            font-size: 0.9rem;
+            box-shadow: 0 0 8px #2b65ec44;
+        }
+        #lang-switcher button:last-child {
+            margin-right: 0;
+        }
+        /* Add some floating stars */
+        .star {
+            position: fixed;
+            border-radius: 50%;
+            background: #fff;
+            opacity: 0.7;
+            pointer-events: none;
+            z-index: 0;
+            animation: twinkle 2s infinite alternate;
+        }
+        @keyframes twinkle {
+            from { opacity: 0.5; }
+            to { opacity: 1; }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css?family=Fredoka:400,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Kanit:400,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Quicksand:400,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Orbitron:700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        Movie Recommender
+    </header>
+    <div class="container">
+        <form id="genreForm">
+            <label for="genre" id="genre-label">Enter your favorite genre:</label>
+            <div style="display:flex;gap:0.5rem;align-items:center;background:rgba(16,26,43,0.7);border-radius:12px;padding:0.7rem 0.7rem 0.7rem 1rem;box-shadow:0 0 8px #2b65ec44;width:100%;">
+                <input type="text" id="genre" name="genre" placeholder="e.g. Sci-Fi, Action, Drama" required style="flex:2;">
+                <select id="genre-select" style="flex:1;min-width:110px;padding:0.7rem;border-radius:10px;background:#101a2b;color:#e0e6f6;border:1.5px solid #7ecfff;">
+                    <option value=""> Genre </option>
+                    <option value="Sci-Fi">Sci-Fi</option>
+                    <option value="Action">Action</option>
+                    <option value="Drama">Drama</option>
+                    <option value="Comedy">Comedy</option>
+                    <option value="Horror">Horror</option>
+                    <option value="Fantasy">Fantasy</option>
+                    <option value="Thriller">Thriller</option>
+                    <option value="Animation">Animation</option>
+                    <option value="Romance">Romance</option>
+                </select>
+                <select id="country-select" style="flex:1;min-width:110px;padding:0.7rem;border-radius:10px;background:#101a2b;color:#e0e6f6;border:1.5px solid #7ecfff;">
+                    <option value=""> Country </option>
+                    <option value="USA">USA</option>
+                    <option value="Japan">Japan</option>
+                    <option value="Korea">Korea</option>
+                    <option value="Thailand">Thailand</option>
+                    <option value="UK">UK</option>
+                    <option value="France">France</option>
+                    <option value="China">China</option>
+                    <option value="India">India</option>
+                    <option value="Germany">Germany</option>
+                    <option value="Spain">Spain</option>
+                </select>
+                <select id="year-select" style="flex:1;min-width:90px;padding:0.7rem;border-radius:10px;background:#101a2b;color:#e0e6f6;border:1.5px solid #7ecfff;">
+                    <option value=""> Year </option>
+                    <option value="2024">2024</option>
+                    <option value="2023">2023</option>
+                    <option value="2022">2022</option>
+                    <option value="2021">2021</option>
+                    <option value="2020">2020</option>
+                    <option value="2010s">2010-2019</option>
+                    <option value="2000s">2000-2009</option>
+                    <option value="1990s">1990-1999</option>
+                    <option value="1980s">1980-1989</option>
+                    <option value="before1980">Before 1980</option>
+                </select>
+            </div>
+            <button type="submit" id="recommend-btn" style="width:100%;margin-top:1.2rem;">Recommend Movie</button>
+        </form>
+        <div id="recommendation" class="recommendation" style="display:none;"></div>
+    </div>
+    <div id="lang-switcher">
+        <button id="lang-en" type="button">EN</button>
+        <button id="lang-th" type="button">TH</button>
+    </div>
+    <script>
+        // Language data
+        const langData = {
+            en: {
+                title: "Movie Recommender",
+                label: "Enter your favorite genre:",
+                placeholder: "e.g. Sci-Fi, Action, Drama",
+                button: "Recommend Movie",
+                searching: "Searching for a movie recommendation...",
+                noresult: "No result",
+                error: "Could not fetch recommendation."
+            },
+            th: {
+                title: "แนะนำหนัง",
+                label: "พิมพ์แนวหนังที่คุณสนใจ:",
+                placeholder: "เช่น ไซไฟ, แอ็คชั่น, ดราม่า",
+                button: "แนะนำหนัง",
+                searching: "กำลังค้นหาหนังที่เหมาะกับคุณ...",
+                noresult: "ไม่พบผลลัพธ์",
+                error: "ไม่สามารถค้นหาคำแนะนำได้"
+            }
+        };
+
+        let currentLang = "en";
+
+        // หากคุณต้องการใช้ AI หรือ Google API Key (เช่น PaLM, Gemini, Vertex AI ฯลฯ)
+        // ให้กำหนดค่าตัวแปรนี้ไว้ในส่วนบนของ <script>
+        const GOOGLE_API_KEY = "AIzaSyCa_Wz0o15PxQZmEBnKWgDyCzf47ua2EjM";
+
+        async function fetchMovieFromGemini(genre) {
+            // ขอ Gemini 2.0 Flash แนะนำหนังหลายเรื่อง
+            const country = document.getElementById('country-select').value;
+            const year = document.getElementById('year-select').value;
+            let prompt;
+            if (currentLang === "th") {
+                prompt = `แนะนำหนังแนว${genre}${country ? " จากประเทศ" + country : ""}${year ? " ปี " + year : ""} 5 เรื่อง พร้อมคำอธิบายสั้นๆ ตอบกลับเป็น JSON array เช่น [{"title": "...", "desc": "..."}, ...]`;
+            } else {
+                prompt = `Recommend 5 ${genre}${country ? " movies from " + country : " movies"}${year ? " released in " + year : ""} with a short description. Respond in JSON array: [{"title": "...", "desc": "..."}, ...]`;
+            }
+
+            try {
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_API_KEY}`,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }]
+                        })
+                    }
+                );
+                if (!response.ok) throw new Error("API error: " + response.status);
+                const data = await response.json();
+                // ดึงข้อความจาก Gemini
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                // พยายามแยก JSON array ออกมา
+                const match = text.match(/\[[\s\S]*\]/);
+                if (match) {
+                    return JSON.parse(match[0]);
+                }
+            } catch (e) {
+                // แสดง error ใน console เพื่อ debug
+                console.error("Gemini API error:", e);
+            }
+            // fallback
+            return [{ title: langData[currentLang].noresult, desc: langData[currentLang].error }];
+        }
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            document.querySelector('header').childNodes[0].nodeValue = langData[lang].title;
+            document.getElementById('genre-label').textContent = langData[lang].label;
+            document.getElementById('genre').placeholder = langData[lang].placeholder;
+            document.getElementById('recommend-btn').textContent = langData[lang].button;
+            // เปลี่ยน option ใน select dropdown
+            const genreSelect = document.getElementById('genre-select');
+            const countrySelect = document.getElementById('country-select');
+            const yearSelect = document.getElementById('year-select');
+            const options = {
+                en: [
+                    "-- Genre --",
+                    "Sci-Fi",
+                    "Action",
+                    "Drama",
+                    "Comedy",
+                    "Horror",
+                    "Fantasy",
+                    "Thriller",
+                    "Animation",
+                    "Romance"
+                ],
+                th: [
+                    "-- เลือกแนว --",
+                    "ไซไฟ",
+                    "แอ็คชั่น",
+                    "ดราม่า",
+                    "คอมเมดี้",
+                    "สยองขวัญ",
+                    "แฟนตาซี",
+                    "ระทึกขวัญ",
+                    "แอนิเมชัน",
+                    "โรแมนติก"
+                ]
+            };
+            const countryOptions = {
+                en: [
+                    "-- Country --",
+                    "USA",
+                    "Japan",
+                    "Korea",
+                    "Thailand",
+                    "UK",
+                    "France",
+                    "China",
+                    "India",
+                    "Germany",
+                    "Spain"
+                ],
+                th: [
+                    "-- ประเทศ --",
+                    "สหรัฐอเมริกา",
+                    "ญี่ปุ่น",
+                    "เกาหลี",
+                    "ไทย",
+                    "อังกฤษ",
+                    "ฝรั่งเศส",
+                    "จีน",
+                    "อินเดีย",
+                    "เยอรมนี",
+                    "สเปน"
+                ]
+            };
+            // ลบ option เดิม
+            while (genreSelect.options.length > 0) genreSelect.remove(0);
+            while (countrySelect.options.length > 0) countrySelect.remove(0);
+            // เพิ่ม option ใหม่
+            options[lang].forEach((text, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx === 0 ? "" : text;
+                opt.textContent = text;
+                genreSelect.appendChild(opt);
+            });
+            countryOptions[lang].forEach((text, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx === 0 ? "" : text;
+                opt.textContent = text;
+                countrySelect.appendChild(opt);
+            });
+            // ไม่ต้องเปลี่ยน year options เพราะเหมือนกันทั้งสองภาษา
+            // เปลี่ยนข้อความในผลลัพธ์ (ถ้ามี)
+            const recDiv = document.getElementById('recommendation');
+            if (recDiv.style.display !== "none" && recDiv.innerHTML) {
+                recDiv.innerHTML = `
+                    <div class="movie-title">${langData[lang].noresult}</div>
+                    <div>${langData[lang].error}</div>
+                `;
+            }
+        }
+
+        document.getElementById('lang-en').onclick = () => setLanguage('en');
+        document.getElementById('lang-th').onclick = () => setLanguage('th');
+
+        document.getElementById('genreForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const genre = document.getElementById('genre').value;
+            const recDiv = document.getElementById('recommendation');
+            recDiv.style.display = 'block';
+            recDiv.innerHTML = langData[currentLang].searching;
+            try {
+                const recs = await fetchMovieFromGemini(genre);
+                recDiv.innerHTML = recs.map(rec => `
+                    <div class="movie-title">${rec.title}</div>
+                    <div>${rec.desc}</div>
+                `).join('<hr style="border:0;border-top:1px solid #223366;margin:1rem 0;">');
+            } catch (err) {
+                recDiv.innerHTML = `
+                    <div class="movie-title">${langData[currentLang].noresult}</div>
+                    <div>${langData[currentLang].error}</div>
+                `;
+            }
+        });
+
+        // เมื่อเลือก genre จาก dropdown ให้นำไปใส่ในช่อง input อัตโนมัติ
+        document.getElementById('genre-select').addEventListener('change', function() {
+            if (this.value) {
+                document.getElementById('genre').value = this.value;
+            }
+        });
+
+        // Add floating stars for space effect
+        for (let i = 0; i < 60; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            const size = Math.random() * 2.5 + 1;
+            star.style.width = `${size}px`;
+            star.style.height = `${size}px`;
+            star.style.top = `${Math.random() * 100}vh`;
+            star.style.left = `${Math.random() * 100}vw`;
+            star.style.opacity = Math.random() * 0.7 + 0.3;
+            star.style.animationDuration = `${1.5 + Math.random()}s`;
+            document.body.appendChild(star);
+        }
+    </script>
+</body>
+</html>
